@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        working-directory: windows
+
     steps:
       - name: Checkout files
         uses: actions/checkout@v4
@@ -29,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SWT-Capture-Windows
-          path: dist/*.exe
+          path: windows/dist/*.exe
