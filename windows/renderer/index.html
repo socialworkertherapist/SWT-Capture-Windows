@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>SWT Capture</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand"><span class="logo"></span><div><strong>SWT Capture</strong><small>Record &amp; download</small></div></div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="record" class="active">● Record</button>
+      <button data-tab="download">⬇ Download</button>
+    </nav>
+    <div class="status" id="status">Ready</div>
+  </header>
+
+  <main class="main" id="recordView">
+    <section class="left">
+      <nav class="modes" id="modes">
+        <button data-mode="screen" class="active"><span class="ico">🖥️</span>Full screen</button>
+        <button data-mode="window"><span class="ico">🗔</span>Window</button>
+        <button data-mode="area"><span class="ico">⬚</span>Select area</button>
+        <button data-mode="auto"><span class="ico">🎬</span>Auto-detect video</button>
+        <button data-mode="audio"><span class="ico">🎙️</span>Audio only</button>
+      </nav>
+
+      <div class="panel" id="sourcePanel">
+        <div class="panel-head">
+          <h3 id="sourceTitle">Choose a screen</h3>
+          <button class="ghost small" id="refresh">↻ Refresh</button>
+        </div>
+        <div class="grid" id="sources"></div>
+      </div>
+
+      <div class="panel" id="areaPanel" hidden>
+        <div class="panel-head"><h3>Area</h3></div>
+        <div class="area-row">
+          <div class="area-info" id="areaInfo">No area selected yet.</div>
+          <button class="primary-outline" id="pickArea">Select area…</button>
+        </div>
+        <div class="presets">
+          <span>Quick size:</span>
+          <button class="chip" data-preset="1280x720">1280×720</button>
+          <button class="chip" data-preset="1920x1080">1920×1080</button>
+          <button class="chip" data-preset="1080x1080">Square</button>
+          <button class="chip" data-preset="1080x1920">Portrait 9:16</button>
+        </div>
+      </div>
+
+      <div class="panel" id="autoPanel" hidden>
+        <div class="panel-head"><h3>Auto-detect video</h3></div>
+        <p class="muted">Start the video playing (YouTube, Teams, a training video…), keep the mouse still, then press <b>Detect</b>. SWT Capture finds the moving picture on screen and records just that area.</p>
+        <div class="area-row">
+          <div class="area-info" id="autoInfo">Nothing detected yet.</div>
+          <button class="primary-outline" id="detect">Detect video</button>
+          <button class="ghost" id="adjust" disabled>Adjust…</button>
+        </div>
+        <canvas id="detectPreview" width="480" height="270" hidden></canvas>
+      </div>
+
+      <div class="panel recent">
+        <div class="panel-head"><h3>Recent captures</h3><button class="ghost small" id="openFolder">Open folder</button></div>
+        <ul id="recent"></ul>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div class="panel">
+        <h3>Audio</h3>
+        <label class="toggle"><input type="checkbox" id="sysAudio" checked><span></span>System sound <small id="sysNote"></small></label>
+        <div class="meter"><i id="sysMeter"></i></div>
+        <label class="toggle"><input type="checkbox" id="micAudio"><span></span>Microphone</label>
+        <select id="micDevice"></select>
+        <div class="meter"><i id="micMeter"></i></div>
+        <div class="row2">
+          <label>System vol <input type="range" id="sysVol" min="0" max="150" value="100"></label>
+          <label>Mic vol <input type="range" id="micVol" min="0" max="200" value="100"></label>
+        </div>
+        <p class="muted small-note">For just the video’s sound: System sound on, Microphone off. Use headphones if you record your voice too, so the mic doesn’t pick up the speakers.</p>
+      </div>
+
+      <div class="panel">
+        <h3>Output</h3>
+        <div class="row2">
+          <label>Format<select id="format"><option value="mp4">MP4 (H.264)</option><option value="webm">WebM (VP9)</option></select></label>
+          <label>Quality<select id="quality"><option value="high">High</option><option value="standard" selected>Standard</option><option value="small">Small file</option></select></label>
+        </div>
+        <div class="row2">
+          <label>Frame rate<select id="fps"><option>15</option><option selected>30</option><option>60</option></select></label>
+          <label>Countdown<select id="countdown"><option value="0">None</option><option value="3" selected>3 sec</option><option value="5">5 sec</option></select></label>
+        </div>
+        <div class="row2">
+          <label>Record for (0 = until I stop)<span class="dur"><input type="number" id="recForMin" min="0" max="600" step="1" value="0"><em>min</em><input type="number" id="recForSec" min="0" max="59" step="1" value="0"><em>sec</em></span></label>
+        </div>
+        <label>Save to</label>
+        <div class="folder"><span id="folder"></span><button class="ghost small" id="chooseFolder">Change</button></div>
+      </div>
+
+      <div class="panel">
+        <h3>Options</h3>
+        <label class="toggle"><input type="checkbox" id="autoStartStop"><span></span>Auto start/stop with motion</label>
+        <div class="row2 sub" id="autoOpts">
+          <label>Pause after still<select id="stillSec"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label>
+          <label>Stop after idle<select id="idleStop"><option value="0">Never</option><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">1 min</option><option value="300">5 min</option></select></label>
+        </div>
+        <label class="toggle"><input type="checkbox" id="showBorder" checked><span></span>Show border around recorded area</label>
+        <label class="toggle"><input type="checkbox" id="compactBar" checked><span></span>Shrink to a small control bar while recording</label>
+      </div>
+
+      <div class="dock">
+      <div class="actions">
+        <button class="record" id="recordBtn"><span class="dot"></span><span id="recordLabel">Start recording</span></button>
+        <button class="ghost" id="shotBtn">📷 Screenshot</button>
+      </div>
+      <p class="keys">Ctrl+Shift+R start/stop · Ctrl+Shift+P pause · Ctrl+Shift+S screenshot</p>
+      </div>
+    </aside>
+  </main>
+
+  <main class="main" id="dlView" hidden>
+    <section class="left">
+      <div class="panel">
+        <h3>Video link</h3>
+        <div class="url-row">
+          <input id="dlUrl" type="text" placeholder="Paste a link to a video, playlist or web page…" spellcheck="false">
+          <button class="ghost" id="dlPaste">Paste</button>
+          <button class="primary-outline" id="dlCheck">Check</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="dlLogin"><span></span>Use my login for this site</label>
+        <div class="login-row" id="loginRow" hidden>
+          <button class="ghost small" id="dlSignin">Open sign-in browser</button>
+          <button class="ghost small" id="dlSignout">Sign out of all sites</button>
+          <span class="muted tiny">Log in to the site in the window that opens, then come back and press Check.</span>
+        </div>
+        <div id="dlInfo" class="info" hidden></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Find videos on a page</h3><button class="ghost small" id="dlFindOpen">Open page</button></div>
+        <p class="muted small-note">For pages where the link above doesn’t work (e.g. a training site): open the page, sign in if needed, and <b>press play</b>. Any video streams it loads appear here.</p>
+        <ul id="foundList" class="found"></ul>
+      </div>
+
+      <div class="panel recent">
+        <div class="panel-head"><h3>Downloads</h3><button class="ghost small" id="dlOpenFolder">Open folder</button></div>
+        <ul id="dlQueue"></ul>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div class="panel">
+        <h3>Get</h3>
+        <div class="seg" id="dlKind">
+          <button data-kind="video" class="active">Video</button>
+          <button data-kind="audio">Audio only</button>
+        </div>
+        <div id="videoOpts">
+          <label>Quality<select id="dlQuality">
+            <option value="0">Best available</option><option value="2160">4K (2160p)</option><option value="1440">1440p</option>
+            <option value="1080" selected>1080p</option><option value="720">720p</option><option value="480">480p</option><option value="360">360p</option>
+          </select></label>
+          <label class="toggle"><input type="checkbox" id="dlCompatible" checked><span></span>Most compatible (plays everywhere)</label>
+        </div>
+        <div id="audioOpts" hidden>
+          <label>Audio format<select id="dlAudioFmt"><option value="mp3">MP3</option><option value="m4a">M4A (AAC)</option></select></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Subtitles</h3>
+        <label>Language<select id="dlSubs"><option value="none">None</option><option value="en" selected>English</option><option value="fr">French</option><option value="es">Spanish</option><option value="all">All available</option></select></label>
+        <label class="toggle"><input type="checkbox" id="dlAutoSubs" checked><span></span>Include auto-generated captions</label>
+        <label class="toggle" id="embedRow"><input type="checkbox" id="dlEmbedSubs" checked><span></span>Put subtitles inside the video</label>
+      </div>
+
+      <div class="panel" id="playlistPanel" hidden>
+        <h3>Playlist</h3>
+        <label class="toggle"><input type="checkbox" id="dlPlaylist" checked><span></span>Download the whole playlist</label>
+        <p class="muted small-note" id="playlistNote"></p>
+      </div>
+
+      <div class="dock">
+        <button class="record dl-go" id="dlGo"><span>⬇ Download</span></button>
+        <p class="keys"><a href="#" id="dlUpdate">Update downloader</a> · <span id="dlVersion"></span></p>
+        <p class="keys">Only download videos you own or have permission to save. Copy-protected (DRM) videos can’t be downloaded.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- compact control bar shown while recording -->
+<div id="bar" hidden>
+  <span class="rec-dot" id="barDot"></span>
+  <span class="time" id="barTime">00:00</span>
+  <span class="bar-status" id="barStatus">Recording</span>
+  <button id="barMic" title="Mute / unmute microphone">🎙️</button>
+  <button id="barShot" title="Screenshot">📷</button>
+  <button id="barPause" title="Pause / resume">⏸</button>
+  <button id="barStop" class="stop" title="Stop and save">■ Stop</button>
+</div>
+
+<div id="countdownOverlay" hidden><div id="countNum">3</div></div>
+<div id="toast" hidden></div>
+
+<video id="srcVideo" class="offstage" muted playsinline></video>
+<canvas id="cropCanvas" hidden></canvas>
+
+<script src="vendor/fix-webm-duration.js"></script>
+<script src="detect.js"></script>
+<script src="app.js"></script>
+<script src="download.js"></script>
+</body>
+</html>

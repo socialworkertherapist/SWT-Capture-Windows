@@ -1,0 +1,62 @@
+{
+  "name": "swt-capture",
+  "productName": "SWT Capture",
+  "version": "1.4.0",
+  "description": "Portable screen and audio recorder: full screen, window, area, or auto-detected video.",
+  "author": "Linda Au",
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "fix-webm-duration": "^1.0.6",
+    "pe-library": "^2.0.1",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "ca.socialworkertherapist.capture",
+    "productName": "SWT Capture",
+    "artifactName": "SWT-Capture-${version}-portable.exe",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "build/icon.png",
+      "build/icon.ico",
+      "downloader.js",
+      "nativeaudio.js"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "afterPack": "build/afterPack.js",
+    "extraResources": [
+      {
+        "from": "tools",
+        "to": "tools",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "tar": "^7.5.22"
+  }
+}
